@@ -1,23 +1,14 @@
-# ✦ PhraseUp — Refinador de Linguagem
+✦ PhraseUp — Refinador de Linguagem
 
-> Inspirado no método de comunicação estratégica. Transforme frases do dia a dia em comunicação elegante e assertiva.
+Transforme textos simples em comunicação clara, profissional e persuasiva com apoio de IA.
 
----
-
-## 🚀 Funcionalidades
-
-| Tela | O que faz |
-|---|---|
-| 💬 **Refinador** | Cola uma frase crua → recebe 2 versões refinadas com explicação |
-| 📚 **Biblioteca** | Salva suas frases favoritas · busca · exporta em CSV |
-| 🔁 **Modo Treino** | Recebe a versão refinada → tenta descobrir o original · recebe pontuação |
-| 📈 **Evolução** | Vícios detectados · atividade · score ao longo do tempo |
-
----
-
-## ⚙️ Instalação local
-
-```bash
+🚀 Funcionalidades
+Tela	O que faz
+💬 Refinador	Insere um texto → recebe versão refinada por nível (básico, profissional, persuasivo)
+📚 Biblioteca	Histórico dos textos refinados
+🔁 Modo Treino	Pratique reescrita e compare com a IA
+📈 Evolução	Métricas de progresso e score de desenvolvimento
+⚙️ Instalação local
 # 1. Clone o repositório
 git clone https://github.com/seu-usuario/phraseup.git
 cd phraseup
@@ -29,67 +20,68 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 # 3. Instale as dependências
 pip install -r requirements.txt
 
-# 4. Rode o app
+# 4. Configure as variáveis de ambiente (.env)
+# Crie um arquivo .env na raiz com:
+
+OPENAI_API_KEY=sk-xxxx
+ANTHROPIC_API_KEY=sk-ant-xxxx
+GOOGLE_API_KEY=xxxx
+
+# 5. Rode o app
 streamlit run app.py
-```
+🔐 Configuração de API
 
-Na barra lateral, insira sua **chave API da Anthropic** (obtenha em [console.anthropic.com](https://console.anthropic.com)).
+O app utiliza múltiplos provedores de IA com fallback automático:
 
----
+OpenAI
+Anthropic
+Google
 
-## ☁️ Deploy no Streamlit Cloud
+Basta configurar pelo menos uma chave no .env.
 
-1. Faça o fork/push para seu GitHub
-2. Acesse [share.streamlit.io](https://share.streamlit.io)
-3. Clique em **New app** → aponte para `app.py`
-4. Em **Secrets**, adicione:
-   ```toml
-   ANTHROPIC_API_KEY = "sk-ant-..."
-   ```
-5. Clique em **Deploy**
-
-> O banco SQLite (`data/phraseup.db`) persiste enquanto o app estiver ativo. Para persistência permanente, migre para [Supabase](https://supabase.com) (gratuito).
-
----
-
-## 🗂 Estrutura do projeto
-
-```
+☁️ Deploy no Streamlit Cloud
+Faça push para seu repositório no GitHub
+Acesse https://share.streamlit.io
+Clique em New app → selecione app.py
+Em Secrets, adicione:
+OPENAI_API_KEY = "sk-xxxx"
+ANTHROPIC_API_KEY = "sk-ant-xxxx"
+GOOGLE_API_KEY = "xxxx"
+Deploy
+🗂 Estrutura do projeto
 phraseup/
-├── app.py                  # Entry point — navegação entre páginas
+├── app.py
+├── core/
+│   ├── config.py          # Variáveis e validação de ambiente
+│   └── llm.py             # Engine de IA (multi-provider + fallback)
+├── services/
+│   └── refinement.py      # Lógica de refinamento por nível
 ├── pages/
-│   ├── chat.py             # Refinador de frases (chat)
-│   ├── library.py          # Biblioteca pessoal
-│   ├── training.py         # Modo treino reverso
-│   └── evolution.py        # Dashboard de evolução
+│   ├── chat.py
+│   ├── library.py
+│   ├── training.py
+│   └── evolution.py
 ├── utils/
-│   ├── db.py               # SQLite — todas as queries
-│   ├── claude_api.py       # Integração com a API Anthropic
-│   └── styles.py           # CSS global
-├── data/                   # Banco gerado automaticamente (gitignore)
-├── .streamlit/
-│   └── config.toml         # Tema do Streamlit
+│   ├── db.py              # SQLite
+│   └── styles.py
 ├── requirements.txt
 ├── .gitignore
 └── README.md
-```
+📊 Banco de dados
 
----
+SQLite local (phraseup.db) criado automaticamente com:
 
-## 📊 Banco de dados (SQLite)
+history — textos refinados + nível + timestamp
+🧠 Diferenciais
+Refinamento por nível (básico, profissional, persuasivo)
+Sistema de treino ativo
+Métricas de evolução do usuário
+Arquitetura multi-IA com fallback automático
+👤 Autor
 
-O banco é criado automaticamente em `data/phraseup.db` com 3 tabelas:
+Luciano Paiva
+Projeto desenvolvido com foco em análise de dados, IA aplicada e evolução da comunicação escrita.
 
-- **`history`** — cada frase refinada (original + v1 + v2 + contexto)
-- **`library`** — frases salvas como favoritas
-- **`training_sessions`** — resultado de cada rodada de treino
-
-Para exportar o CSV da biblioteca, use o botão na tela **Minha Biblioteca**.
-
----
-
-## 🧠 Créditos
-
-Método de comunicação inspirado em comunicação estratégica.  
-Autoria.: Luciano Paiva.
-Desenvolvido com [Streamlit](https://streamlit.io) + [Anthropic Claude](https://anthropic.com).
+⚠️ Observações
+O arquivo .env não deve ser versionado
+O banco .db é local e não persistente em deploy gratuito
