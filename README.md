@@ -1,87 +1,88 @@
-✦ PhraseUp — Refinador de Linguagem
+✦ PhraseUp — Refinador de Linguagem com IA
+Transforme textos simples em comunicação clara, profissional e persuasiva com o poder da Inteligência Artificial multimodelo.
+O PhraseUp é uma ferramenta avançada de apoio à escrita que utiliza múltiplos provedores de LLM (Large Language Models) para refinar textos em diferentes níveis de formalidade e impacto, oferecendo também um ecossistema de treino e métricas de evolução.
+🚀 Funcionalidades Principais
+Tela	O que faz?
+💬 Refinador	Interface principal para inserir textos e selecionar o nível de refinamento (Básico, Profissional ou Persuasivo).
+📚 Biblioteca	Repositório centralizado com o histórico de todos os seus textos refinados para consulta rápida.
+🔁 Modo Treino	Ambiente interativo para praticar a reescrita manual e comparar seu desempenho com as sugestões da IA.
+📈 Evolução	Dashboard com métricas de progresso, score de clareza e análise de desenvolvimento da escrita.
+🧠 Diferenciais Técnicos
+Arquitetura Multi-IA: Sistema inteligente de fallback automático. Se um provedor falhar, o app alterna entre OpenAI, Anthropic e Google sem interromper a experiência.
+Refinamento por Nível: Prompts otimizados para converter a intenção do usuário em resultados técnicos, executivos ou de vendas.
+Persistência Inteligente: Banco de dados SQLite local integrado para gestão de histórico e progresso.
+🗂 Estrutura do Projeto
+bash
+phraseup/
+├── app.py                # Ponto de entrada (Main)
+├── core/
+│   ├── config.py         # Gestão de variáveis e validação de ambiente
+│   └── llm.py            # Engine de IA (Multi-provider + Fallback logic)
+├── services/
+│   └── refinement.py     # Regras de negócio e lógica de refinamento
+├── pages/                # Navegação multi-página do Streamlit
+│   ├── chat.py           # Interface de refinamento
+│   ├── library.py        # Gestão de histórico
+│   ├── training.py       # Módulo de exercícios
+│   └── evolution.py      # Painel de métricas
+├── utils/
+│   ├── db.py             # Interface SQLite
+│   └── styles.py         # Customização de CSS/UI
+├── requirements.txt      # Dependências do projeto
+└── README.md             # Documentação
+Use o código com cuidado.
 
-Transforme textos simples em comunicação clara, profissional e persuasiva com apoio de IA.
-
-🚀 Funcionalidades
-Tela	O que faz
-💬 Refinador	Insere um texto → recebe versão refinada por nível (básico, profissional, persuasivo)
-📚 Biblioteca	Histórico dos textos refinados
-🔁 Modo Treino	Pratique reescrita e compare com a IA
-📈 Evolução	Métricas de progresso e score de desenvolvimento
-⚙️ Instalação local
-# 1. Clone o repositório
+⚙️ Instalação Local
+Clone o repositório:
+bash
 git clone https://github.com/seu-usuario/phraseup.git
 cd phraseup
+Use o código com cuidado.
 
-# 2. Crie um ambiente virtual
+Crie e ative seu ambiente virtual:
+bash
+# Windows
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+.venv\Scripts\activate
 
-# 3. Instale as dependências
+# Linux/Mac
+python -m venv .venv
+source .venv/bin/activate
+Use o código com cuidado.
+
+Instale as dependências:
+bash
 pip install -r requirements.txt
+Use o código com cuidado.
 
-# 4. Configure as variáveis de ambiente (.env)
-# Crie um arquivo .env na raiz com:
+Configure as variáveis de ambiente:
+Crie um arquivo .env na raiz do projeto:
+env
+OPENAI_API_KEY="sua_chave_aqui"
+ANTHROPIC_API_KEY="sua_chave_aqui"
+GOOGLE_API_KEY="sua_chave_aqui"
+Use o código com cuidado.
 
-OPENAI_API_KEY=sk-xxxx
-ANTHROPIC_API_KEY=sk-ant-xxxx
-GOOGLE_API_KEY=xxxx
-
-# 5. Rode o app
+Inicie a aplicação:
+bash
 streamlit run app.py
-🔐 Configuração de API
-
-O app utiliza múltiplos provedores de IA com fallback automático:
-
-OpenAI
-Anthropic
-Google
-
-Basta configurar pelo menos uma chave no .env.
+Use o código com cuidado.
 
 ☁️ Deploy no Streamlit Cloud
-Faça push para seu repositório no GitHub
-Acesse https://share.streamlit.io
-Clique em New app → selecione app.py
-Em Secrets, adicione:
+Faça o Push do código para seu repositório GitHub.
+Acesse share.streamlit.io.
+Selecione o repositório e o arquivo app.py.
+Em Advanced Settings > Secrets, insira suas chaves no formato TOML:
+toml
 OPENAI_API_KEY = "sk-xxxx"
 ANTHROPIC_API_KEY = "sk-ant-xxxx"
 GOOGLE_API_KEY = "xxxx"
-Deploy
-🗂 Estrutura do projeto
-phraseup/
-├── app.py
-├── core/
-│   ├── config.py          # Variáveis e validação de ambiente
-│   └── llm.py             # Engine de IA (multi-provider + fallback)
-├── services/
-│   └── refinement.py      # Lógica de refinamento por nível
-├── pages/
-│   ├── chat.py
-│   ├── library.py
-│   ├── training.py
-│   └── evolution.py
-├── utils/
-│   ├── db.py              # SQLite
-│   └── styles.py
-├── requirements.txt
-├── .gitignore
-└── README.md
-📊 Banco de dados
+Use o código com cuidado.
 
-SQLite local (phraseup.db) criado automaticamente com:
-
-history — textos refinados + nível + timestamp
-🧠 Diferenciais
-Refinamento por nível (básico, profissional, persuasivo)
-Sistema de treino ativo
-Métricas de evolução do usuário
-Arquitetura multi-IA com fallback automático
+📊 Banco de Dados
+O sistema utiliza um banco SQLite local (phraseup.db) criado automaticamente no primeiro acesso.
+Tabela history: Armazena textos originais, refinados, nível escolhido e timestamp.
+⚠️ Nota sobre Deploy: No Streamlit Cloud, o banco .db é volátil. Para persistência permanente, recomenda-se integrar com Streamlit Connections.
 👤 Autor
-
 Luciano Paiva
-Projeto desenvolvido com foco em análise de dados, IA aplicada e evolução da comunicação escrita.
-
-⚠️ Observações
-O arquivo .env não deve ser versionado
-O banco .db é local e não persistente em deploy gratuito
+Projeto focado em análise de dados, IA aplicada e evolução da comunicação escrita.
