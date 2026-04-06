@@ -1,88 +1,91 @@
-✦ PhraseUp — Refinador de Linguagem com IA
-Transforme textos simples em comunicação clara, profissional e persuasiva com o poder da Inteligência Artificial multimodelo.
-O PhraseUp é uma ferramenta avançada de apoio à escrita que utiliza múltiplos provedores de LLM (Large Language Models) para refinar textos em diferentes níveis de formalidade e impacto, oferecendo também um ecossistema de treino e métricas de evolução.
-🚀 Funcionalidades Principais
-Tela	O que faz?
-💬 Refinador	Interface principal para inserir textos e selecionar o nível de refinamento (Básico, Profissional ou Persuasivo).
-📚 Biblioteca	Repositório centralizado com o histórico de todos os seus textos refinados para consulta rápida.
-🔁 Modo Treino	Ambiente interativo para praticar a reescrita manual e comparar seu desempenho com as sugestões da IA.
-📈 Evolução	Dashboard com métricas de progresso, score de clareza e análise de desenvolvimento da escrita.
-🧠 Diferenciais Técnicos
-Arquitetura Multi-IA: Sistema inteligente de fallback automático. Se um provedor falhar, o app alterna entre OpenAI, Anthropic e Google sem interromper a experiência.
-Refinamento por Nível: Prompts otimizados para converter a intenção do usuário em resultados técnicos, executivos ou de vendas.
-Persistência Inteligente: Banco de dados SQLite local integrado para gestão de histórico e progresso.
-🗂 Estrutura do Projeto
-bash
-phraseup/
-├── app.py                # Ponto de entrada (Main)
-├── core/
-│   ├── config.py         # Gestão de variáveis e validação de ambiente
-│   └── llm.py            # Engine de IA (Multi-provider + Fallback logic)
-├── services/
-│   └── refinement.py     # Regras de negócio e lógica de refinamento
-├── pages/                # Navegação multi-página do Streamlit
-│   ├── chat.py           # Interface de refinamento
-│   ├── library.py        # Gestão de histórico
-│   ├── training.py       # Módulo de exercícios
-│   └── evolution.py      # Painel de métricas
-├── utils/
-│   ├── db.py             # Interface SQLite
-│   └── styles.py         # Customização de CSS/UI
-├── requirements.txt      # Dependências do projeto
-└── README.md             # Documentação
-Use o código com cuidado.
+# ✦ PhraseUp  
+### Refinador de Linguagem com IA Multimodelo
 
-⚙️ Instalação Local
-Clone o repositório:
-bash
+O PhraseUp transforma textos simples em comunicação **clara**, **profissional** e **persuasiva**, utilizando múltiplos provedores de LLM para garantir consistência, qualidade e continuidade. Além do refinamento, o app oferece ferramentas de treino e métricas de evolução da escrita.
+
+---
+
+## 🌟 Principais Funcionalidades
+
+| Tela | Descrição |
+|------|-----------|
+| 💬 **Refinador** | Insira textos e escolha o nível de refinamento (Básico, Profissional ou Persuasivo). |
+| 📚 **Biblioteca** | Histórico completo de textos refinados, organizado e pesquisável. |
+| 🔁 **Modo Treino** | Pratique reescrita manual e compare com sugestões da IA. |
+| 📈 **Evolução** | Dashboard com métricas, score de clareza e progresso ao longo do tempo. |
+
+---
+
+## 🧠 Diferenciais Técnicos
+
+- **Arquitetura Multi‑IA com Fallback Automático**  
+  Alternância inteligente entre OpenAI, Anthropic e Google caso algum provedor falhe.
+
+- **Refinamento por Nível**  
+  Prompts otimizados para diferentes intenções: técnico, executivo ou persuasivo.
+
+- **Persistência Inteligente**  
+  Banco SQLite local para histórico, treino e evolução.
+
+---
+
+## 🗂 Estrutura do Projeto
+
+phraseup/ ├── app.py                # Ponto de entrada ├── core/ │   ├── config.py         # Variáveis de ambiente e validação │   └── llm.py            # Engine Multi-IA + Fallback ├── services/ │   └── refinement.py     # Lógica de refinamento ├── pages/                # Módulos do Streamlit │   ├── chat.py           # Interface de refinamento │   ├── library.py        # Histórico │   ├── training.py       # Modo treino │   └── evolution.py      # Métricas ├── utils/ │   ├── db.py             # Interface SQLite │   └── styles.py         # Customização de UI ├── requirements.txt └── README.md
+
+
+---
+
+## ⚙️ Instalação Local
+
+### 1. Clone o repositório
+```bash
 git clone https://github.com/seu-usuario/phraseup.git
 cd phraseup
-Use o código com cuidado.
 
-Crie e ative seu ambiente virtual:
-bash
+2. Crie e ative o ambiente virtual
 # Windows
+
 python -m venv .venv
 .venv\Scripts\activate
 
 # Linux/Mac
 python -m venv .venv
 source .venv/bin/activate
-Use o código com cuidado.
 
-Instale as dependências:
-bash
+3. Instale as dependências
+
 pip install -r requirements.txt
-Use o código com cuidado.
 
-Configure as variáveis de ambiente:
-Crie um arquivo .env na raiz do projeto:
-env
+4. Configure as variáveis de ambiente
+Crie um arquivo .env na raiz:
+
 OPENAI_API_KEY="sua_chave_aqui"
 ANTHROPIC_API_KEY="sua_chave_aqui"
 GOOGLE_API_KEY="sua_chave_aqui"
-Use o código com cuidado.
 
-Inicie a aplicação:
-bash
+5. Inicie a aplicação
 streamlit run app.py
-Use o código com cuidado.
 
 ☁️ Deploy no Streamlit Cloud
-Faça o Push do código para seu repositório GitHub.
-Acesse share.streamlit.io.
-Selecione o repositório e o arquivo app.py.
-Em Advanced Settings > Secrets, insira suas chaves no formato TOML:
-toml
+- Faça push do código para o GitHub.
+- Acesse share.streamlit.io.
+- Selecione o repositório e o arquivo app.py.
+- Em Advanced Settings → Secrets, adicione:
+
 OPENAI_API_KEY = "sk-xxxx"
 ANTHROPIC_API_KEY = "sk-ant-xxxx"
 GOOGLE_API_KEY = "xxxx"
-Use o código com cuidado.
 
 📊 Banco de Dados
-O sistema utiliza um banco SQLite local (phraseup.db) criado automaticamente no primeiro acesso.
-Tabela history: Armazena textos originais, refinados, nível escolhido e timestamp.
-⚠️ Nota sobre Deploy: No Streamlit Cloud, o banco .db é volátil. Para persistência permanente, recomenda-se integrar com Streamlit Connections.
+- O PhraseUp utiliza SQLite local (phraseup.db), criado automaticamente.
+- Tabela history: armazena texto original, refinado, nível e timestamp.
+⚠️ Atenção: No Streamlit Cloud, o banco é volátil.
+Para persistência real, considere usar Streamlit Connections.
+
 👤 Autor
 Luciano Paiva
 Projeto focado em análise de dados, IA aplicada e evolução da comunicação escrita.
+
+
+
