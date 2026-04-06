@@ -1,6 +1,6 @@
 # ✦ PhraseUp — Refinador de Linguagem
 
-> Inspirado no método de **Ezequiel Mafra**. Transforme frases do dia a dia em comunicação elegante e assertiva.
+> Inspirado no método de comunicação estratégica. Transforme frases do dia a dia em comunicação elegante e assertiva.
 
 ---
 
@@ -90,5 +90,6 @@ Para exportar o CSV da biblioteca, use o botão na tela **Minha Biblioteca**.
 
 ## 🧠 Créditos
 
-Método de comunicação inspirado em [@ezequielmafra](https://www.tiktok.com/@ezequielmafra) no TikTok.  
+Método de comunicação inspirado em comunicação estratégica.  
+Autoria.: Luciano Paiva.
 Desenvolvido com [Streamlit](https://streamlit.io) + [Anthropic Claude](https://anthropic.com).
