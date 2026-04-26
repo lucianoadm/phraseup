@@ -3,6 +3,24 @@ from core.config import validate_keys
 from services.refinement import refine_text
 from components.sidebar import render_sidebar
 
+import streamlit as st
+
+def verificar_acesso_portal():
+    # Tenta obter o token e o timestamp da URL
+    query_params = st.query_params
+    token = query_params.get("token")
+    
+    if not token:
+        # Se não houver token, bloqueia tudo e para o script
+        st.error("🚫 Acesso Negado: Este módulo deve ser acedido através do Portal Cognivus.")
+        st.info("Por favor, faça login em: https://cognivus.com.br")
+        st.stop() # Interrompe a execução do app aqui
+
+# Chamar a verificação antes de qualquer outra coisa
+verificar_acesso_portal()
+
+# ... restante do seu código (layout, lógica, etc.)
+
 # Configuração da página (sempre antes de qualquer renderização)
 st.set_page_config(
     page_title="PhraseUp",
