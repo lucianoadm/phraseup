@@ -1,63 +1,85 @@
 # pages/training.py
 
 import streamlit as st
+import time
+import firebase_admin
+from firebase_admin import credentials, firestore
 from services.refinement import refine_text
 from components.sidebar import render_sidebar
+
+# ---------------------------------------------------------
+# 1. CONFIGURAÇÃO (Primeiro comando Streamlit)
+# ---------------------------------------------------------
+st.set_page_config(page_title="Training - PhraseUp", layout="centered")
+
 # ---------------------------------------------------------
 # 2. INICIALIZAÇÃO SEGURA DO FIREBASE (VIA SECRETS)
 # ---------------------------------------------------------
 def iniciar_firebase():
     if not firebase_admin._apps:
-        # Puxa os dados do Secrets
-        fb_dict = dict(st.secrets["firebase"])
-        
-        # LIMPEZA CRUCIAL: Remove escapes extras e garante que a chave 
-        # seja lida corretamente pelo motor do Firebase
-        if "private_key" in fb_dict:
-            fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n")
+        try:
+            if "firebase" not in st.secrets:
+                st.error("Configuração 'firebase' não encontrada nos Secrets.")
+                st.stop()
+                
+            fb_dict = dict(st.secrets["firebase"])
             
-        cred = credentials.Certificate(fb_dict)
-        firebase_admin.initialize_app(cred)
+            # Limpeza da chave PEM para evitar erros de Padding
+            if "private_key" in fb_dict:
+                fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n").strip()
+                
+            cred = credentials.Certificate(fb_dict)
+            firebase_admin.initialize_app(cred)
+        except Exception as e:
+            st.error(f"Erro ao conectar ao Firebase: {e}")
+            st.stop()
     
     return firestore.client()
 
+# Inicializa o banco de dados
+db = iniciar_firebase()
+
 # ---------------------------------------------------------
-# 3. TRAVA DE SEGURANÇA COGNIVUS (TOKEN + TIMESTAMP)
+# 3. TRAVA DE SEGURANÇA COGNIVUS (TOKEN + SESSION STATE)
 # ---------------------------------------------------------
 def validar_acesso():
+    # 1. Verifica se já está validado na sessão atual (permite troca de abas)
+    if "autenticado" in st.session_state and st.session_state["autenticado"]:
+        return st.session_state.get("user_id")
+
+    # 2. Se não, verifica parâmetros na URL (vinda do Portal)
     params = st.query_params
     token = params.get("token")
     timestamp = params.get("t")
-    agora_ms = int(time.time() * 1000)
-    
-    # Validade de 20 segundos (margem para carregamento do server)
-    validade_ms = 20000 
     
     if token and timestamp:
         try:
+            agora_ms = int(time.time() * 1000)
             tempo_decorrido = agora_ms - int(timestamp)
             
-            # Se o link for velho ou o token for inválido
-            if tempo_decorrido > validade_ms or len(token) < 10:
-                st.error("🚫 Link de acesso expirado ou inválido.")
-                st.info("Por favor, acesse o sistema através do Portal Cognivus.")
-                st.stop()
-            return token # Retorna o UID do usuário para uso posterior
-        except (ValueError, TypeError):
-            st.error("🚫 Parâmetros de segurança corrompidos.")
-            st.stop()
-    else:
-        st.warning("⚠️ Acesso restrito. Por favor, use o Portal oficial.")
-        st.stop()
+            # Margem de 30 segundos para o primeiro carregamento
+            if tempo_decorrido < 30000 and len(token) >= 10:
+                st.session_state["autenticado"] = True
+                st.session_state["user_id"] = token
+                return token
+        except:
+            pass
 
-# Executa a trava
+    # 3. Bloqueio caso falhe URL e Sessão
+    st.error("🚫 Acesso restrito ou link expirado.")
+    st.info("Por favor, acesse através do Portal Cognivus.")
+    st.stop()
+
+# Executa a validação
 user_id = validar_acesso()
 
 # ---------------------------------------------------------
 # 4. RENDERIZAÇÃO E LÓGICA DO APP
 # ---------------------------------------------------------
-st.title("Cognivus LexOS")
+st.title("🎯 Treinamento LexOS")
 render_sidebar()
+
+# Prossiga com a lógica de treinamento abaixo...
 
 # Exemplo de uso do DB e do User_ID:
 # user_data = db.collection("usuarios").document(user_id).get()
