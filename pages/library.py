@@ -18,26 +18,42 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA
+# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA (PADRÃO MASTER AJUSTADO)
 def validar_acesso():
+    # Verifica se já houve validação nesta sessão ativa
+    if "autenticado" in st.session_state and st.session_state["autenticado"]:
+        return st.session_state.get("user_id")
+
     params = st.query_params
     token = params.get("token")
-    timestamp = params.get("t")
+    timestamp_str = params.get("t")
     agora_ms = int(time.time() * 1000)
     
-    # Aumentei para 20s porque apps com muitas bibliotecas (pandas, plotly, wordcloud) 
-    # demoram um pouco mais para carregar no servidor.
-    validade_ms = 20000 
+    # Janela Master de 20 minutos (1.200.000 ms)
+    validade_ms = 1200000 
     
-    if token and timestamp:
+    if token and timestamp_str:
         try:
-            tempo_decorrido = agora_ms - int(timestamp)
-            if tempo_decorrido > validade_ms or len(token) < 10:
+            timestamp = int(timestamp_str)
+            
+            # Normalização para milissegundos
+            if timestamp < 10000000000:
+                timestamp *= 1000
+                
+            tempo_decorrido = abs(agora_ms - timestamp)
+            
+            if tempo_decorrido <= validade_ms and len(token) >= 10:
+                # Registra na sessão para navegação entre abas
+                st.session_state["autenticado"] = True
+                st.session_state["user_id"] = token
+                st.query_params.clear() 
+                return token
+            else:
                 st.error("🚫 Link de acesso expirado ou inválido.")
                 st.info("Por favor, acesse o sistema através do Portal Cognivus.")
                 st.stop()
-        except ValueError:
-            st.error("🚫 Parâmetros de segurança corrompidos.")
+        except Exception as e:
+            st.error(f"🚫 Falha na validação de segurança: {e}")
             st.stop()
     else:
         st.warning("⚠️ Acesso restrito. Por favor, faça login no Portal oficial.")
@@ -47,16 +63,10 @@ def validar_acesso():
 validar_acesso()
 
 # ---------------------------------------------------------
-# 4. RENDERIZAÇÃO E LÓGICA DO APP
+# 4. RENDERIZAÇÃO E LÓGICA DO APP (PRESERVAÇÃO TOTAL)
 # ---------------------------------------------------------
 st.title("📚 Biblioteca LexOS")
 render_sidebar()
-
-# Seu código continua aqui...
-
-# Exemplo de uso do DB e do User_ID:
-# user_data = db.collection("usuarios").document(user_id).get()
-
 
 st.markdown("""
 <div class='page-header'>
@@ -72,7 +82,7 @@ if not items:
     st.info("Sua biblioteca está vazia. Refine algumas frases e salve as que mais gostar!")
     st.stop()
 
-# Export CSV
+# Export CSV (Mantido original)
 if st.button("⬇️ Exportar como CSV"):
     output = io.StringIO()
     writer = csv.writer(output)
@@ -96,7 +106,6 @@ st.markdown("---")
 search = st.text_input("🔍 Buscar na biblioteca", placeholder="Digite uma palavra...")
 
 for item in items:
-    # Agora são 5 valores
     lib_id, original, refined, level, saved_at = item
 
     # Filtro de busca
