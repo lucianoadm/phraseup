@@ -4,13 +4,25 @@ def render_sidebar():
     # Cores baseadas no seu design
     primary_color = "#7C3AED"
     accent_color = "#F97316"
-    text_color = "#31333F"  # Cor padrão do texto (ajuste para branco se o tema for escuro)
+
+    # CSS INCISIVO: Remove os botões redundantes do topo e limpa a interface
+    st.markdown("""
+        <style>
+            /* Oculta a navegação padrão do Streamlit (botões automáticos no topo) */
+            [data-testid="stSidebarNav"] {
+                display: none;
+            }
+            /* Remove espaçamentos excessivos no topo da sidebar */
+            [data-testid="stSidebar"] .stMarkdown {
+                padding-top: 0px;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
     with st.sidebar:
         # -----------------------------
         # CABEÇALHO (LOGO + AVATAR)
         # -----------------------------
-        # Removi o container de texto interno para evitar conflitos de renderização
         st.markdown(
             f"""
             <div style="text-align:center; margin-bottom:20px;">
@@ -34,40 +46,36 @@ def render_sidebar():
         st.divider()
 
         # -----------------------------
-        # NAVEGAÇÃO (Onde geralmente ocorre o erro)
+        # NAVEGAÇÃO (Única e Personalizada)
         # -----------------------------
         st.markdown("**Navegação**")
         
-        # O st.page_link só funciona se os arquivos existirem. 
-        # Se estiver testando apenas o layout, use botões ou markdown simples.
         try:
+            # Usando page_link para navegação fluida entre os arquivos existentes
             st.page_link("app.py", label="Início", icon="🏠")
+            st.page_link("pages/chat.py", label="Chat", icon="💬")
             st.page_link("pages/library.py", label="Biblioteca", icon="📚")
             st.page_link("pages/evolution.py", label="Evolução", icon="📈")
             st.page_link("pages/training.py", label="Treinamento", icon="🎓")
         except Exception:
-            # Fallback caso os arquivos .py não estejam criados
-            st.info("Arquivos de páginas não detectados.")
-            st.write("🏠 Início")
-            st.write("📚 Biblioteca")
+            st.info("Arquivos de páginas não detectados ou caminhos incorretos.")
 
         st.divider()
 
         # -----------------------------
         # RODAPÉ (CRÉDITOS)
         # -----------------------------
-        # Use st.markdown para links externos de forma limpa
         st.markdown(
             f"""
             <div style="font-size:13px; line-height:1.6;">
-                <strong>Criado por Luciano Paiva</strong><br>
+                <strong>Criado por Luciano P. de Moura</strong><br>
                 Construído com Python & IA.
                 <br><br>
                 <a href="https://github.com/lucianoadm" style="text-decoration:none;">🐙 GitHub</a><br>
                 <a href="https://linkedin.com/in/luciano-paiva-b0b01a19b" style="text-decoration:none;">💼 LinkedIn</a>
             </div>
             <div style="font-size:11px; margin-top:20px; opacity:0.6;">
-                © 2024 — Todos os direitos reservados.
+                © 2026 — Todos os direitos reservados.
             </div>
             """,
             unsafe_allow_html=True,
