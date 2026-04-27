@@ -44,7 +44,7 @@ def validar_acesso():
     agora_ms = int(time.time() * 1000)
     
     # Validade de 20 segundos (margem para carregamento do server)
-    validade_ms = 20000 
+    validade_ms = 60000 
     
     if token and timestamp:
         try:
