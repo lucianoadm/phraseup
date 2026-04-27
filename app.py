@@ -21,20 +21,18 @@ st.set_page_config(
 # ---------------------------------------------------------
 def iniciar_firebase():
     if not firebase_admin._apps:
-        # Puxa o dicionário completo do Secrets
+        # Puxa os dados do Secrets
         fb_dict = dict(st.secrets["firebase"])
         
-        # CORREÇÃO TÉCNICA: O Python precisa interpretar corretamente os \n da private_key
-        if "\\n" in fb_dict["private_key"]:
+        # LIMPEZA CRUCIAL: Remove escapes extras e garante que a chave 
+        # seja lida corretamente pelo motor do Firebase
+        if "private_key" in fb_dict:
             fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n")
             
         cred = credentials.Certificate(fb_dict)
         firebase_admin.initialize_app(cred)
     
     return firestore.client()
-
-# Inicializa o banco de dados
-db = iniciar_firebase()
 
 # ---------------------------------------------------------
 # 3. TRAVA DE SEGURANÇA COGNIVUS (TOKEN + TIMESTAMP)
