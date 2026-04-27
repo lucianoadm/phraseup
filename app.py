@@ -1,27 +1,14 @@
 import streamlit as st
 import time
+import firebase_admin
+from firebase_admin import credentials, firestore
 from core.config import validate_keys
 from services.refinement import refine_text
 from components.sidebar import render_sidebar
-import firebase_admin
-from firebase_admin import credentials, firestore
 
-# Inicializa o Firebase usando os Secrets do Streamlit
-def iniciar_firebase():
-    if not firebase_admin._apps:
-        # Puxa o dicionário completo que você colou no Secrets
-        firebase_info = st.secrets["firebase"]
-        
-        # Cria a credencial a partir do dicionário
-        cred = credentials.Certificate(dict(firebase_info))
-        firebase_admin.initialize_app(cred)
-    
-    return firestore.client()
-
-# Chama a função
-db = iniciar_firebase()
-
-# 1. CONFIGURAÇÃO DA PÁGINA (Sempre o primeiro comando st)
+# ---------------------------------------------------------
+# 1. CONFIGURAÇÃO DA PÁGINA (OBRIGATÓRIO: PRIMEIRO COMANDO)
+# ---------------------------------------------------------
 st.set_page_config(
     page_title="PhraseUp",
     page_icon="✍️",
@@ -29,36 +16,66 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. TRAVA DE SEGURANÇA COGNIVUS
+# ---------------------------------------------------------
+# 2. INICIALIZAÇÃO SEGURA DO FIREBASE (VIA SECRETS)
+# ---------------------------------------------------------
+def iniciar_firebase():
+    if not firebase_admin._apps:
+        # Puxa o dicionário completo do Secrets
+        fb_dict = dict(st.secrets["firebase"])
+        
+        # CORREÇÃO TÉCNICA: O Python precisa interpretar corretamente os \n da private_key
+        if "\\n" in fb_dict["private_key"]:
+            fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n")
+            
+        cred = credentials.Certificate(fb_dict)
+        firebase_admin.initialize_app(cred)
+    
+    return firestore.client()
+
+# Inicializa o banco de dados
+db = iniciar_firebase()
+
+# ---------------------------------------------------------
+# 3. TRAVA DE SEGURANÇA COGNIVUS (TOKEN + TIMESTAMP)
+# ---------------------------------------------------------
 def validar_acesso():
     params = st.query_params
     token = params.get("token")
     timestamp = params.get("t")
     agora_ms = int(time.time() * 1000)
-    validade_ms = 15000 
+    
+    # Validade de 20 segundos (margem para carregamento do server)
+    validade_ms = 20000 
     
     if token and timestamp:
         try:
             tempo_decorrido = agora_ms - int(timestamp)
+            
+            # Se o link for velho ou o token for inválido
             if tempo_decorrido > validade_ms or len(token) < 10:
                 st.error("🚫 Link de acesso expirado ou inválido.")
                 st.info("Por favor, acesse o sistema através do Portal Cognivus.")
                 st.stop()
-        except ValueError:
+            return token # Retorna o UID do usuário para uso posterior
+        except (ValueError, TypeError):
             st.error("🚫 Parâmetros de segurança corrompidos.")
             st.stop()
     else:
-        st.warning("⚠️ Acesso restrito. Use o Portal oficial.")
+        st.warning("⚠️ Acesso restrito. Por favor, use o Portal oficial.")
         st.stop()
 
-# Executa a trava logo após a config inicial
-validar_acesso()
+# Executa a trava
+user_id = validar_acesso()
 
-# 3. RENDERIZAÇÃO E LÓGICA DO APP
+# ---------------------------------------------------------
+# 4. RENDERIZAÇÃO E LÓGICA DO APP
+# ---------------------------------------------------------
 st.title("Cognivus LexOS")
-
-# Renderiza a sidebar global
 render_sidebar()
+
+# Exemplo de uso do DB e do User_ID:
+# user_data = db.collection("usuarios").document(user_id).get()
 
 # -------------------------------------------------
 # TEMA VISUAL + MODO ESCURO
