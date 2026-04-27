@@ -15,26 +15,43 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA
+# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA (PADRÃO MASTER AJUSTADO)
 def validar_acesso():
+    # Verifica se já houve validação nesta sessão ativa do navegador
+    if "autenticado" in st.session_state and st.session_state["autenticado"]:
+        return st.session_state.get("user_id")
+
     params = st.query_params
     token = params.get("token")
-    timestamp = params.get("t")
+    timestamp_str = params.get("t")
     agora_ms = int(time.time() * 1000)
     
-    # Aumentei para 20s porque apps com muitas bibliotecas (pandas, plotly, wordcloud) 
-    # demoram um pouco mais para carregar no servidor.
-    validade_ms = 20000 
+    # Janela Master de 20 minutos (1.200.000 ms) para evitar erros de link expirado
+    validade_ms = 1200000 
     
-    if token and timestamp:
+    if token and timestamp_str:
         try:
-            tempo_decorrido = agora_ms - int(timestamp)
-            if tempo_decorrido > validade_ms or len(token) < 10:
+            timestamp = int(timestamp_str)
+            
+            # Normalização Universal: Trata segundos ou milissegundos
+            if timestamp < 10000000000:
+                timestamp *= 1000
+                
+            # Uso de abs() para mitigar dessincronização de relógio entre cliente/servidor
+            tempo_decorrido = abs(agora_ms - timestamp)
+            
+            if tempo_decorrido <= validade_ms and len(token) >= 10:
+                # Registra sucesso na sessão para navegação livre entre abas
+                st.session_state["autenticado"] = True
+                st.session_state["user_id"] = token
+                st.query_params.clear() 
+                return token
+            else:
                 st.error("🚫 Link de acesso expirado ou inválido.")
                 st.info("Por favor, acesse o sistema através do Portal Cognivus.")
                 st.stop()
-        except ValueError:
-            st.error("🚫 Parâmetros de segurança corrompidos.")
+        except Exception as e:
+            st.error(f"🚫 Parâmetros de segurança corrompidos: {e}")
             st.stop()
     else:
         st.warning("⚠️ Acesso restrito. Por favor, faça login no Portal oficial.")
@@ -44,24 +61,15 @@ def validar_acesso():
 validar_acesso()
 
 # ---------------------------------------------------------
-# 4. RENDERIZAÇÃO E LÓGICA DO APP
+# 4. RENDERIZAÇÃO E LÓGICA DO APP (PRESERVAÇÃO TOTAL)
 # ---------------------------------------------------------
 st.title("🎯 Treinamento LexOS")
 render_sidebar()
 
-# Prossiga com a lógica de treinamento abaixo...
-
-# Exemplo de uso do DB e do User_ID:
-# user_data = db.collection("usuarios").document(user_id).get()
-
 st.title("🔁 Modo Treino")
-
 st.markdown("Pratique e melhore sua escrita com desafios.")
 
-# -------------------------
-# 🎯 Frases para treino
-# -------------------------
-
+# 🎯 Frases para treino (Mantido original)
 challenges = [
     "preciso melhorar esse texto urgente",
     "acho que isso não ficou muito bom",
@@ -75,33 +83,22 @@ if "challenge" not in st.session_state:
     st.session_state.challenge = random.choice(challenges)
 
 st.subheader("📝 Desafio")
-
 st.write("Refine a frase abaixo:")
-
 st.info(st.session_state.challenge)
 
-# -------------------------
 # ✍️ Entrada do usuário
-# -------------------------
-
 user_answer = st.text_area("Sua versão refinada:", height=150)
 
-# -------------------------
 # 🤖 Comparação com IA
-# -------------------------
-
 if st.button("Validar resposta", use_container_width=True):
-
     if not user_answer.strip():
         st.warning("Digite sua versão antes de validar.")
     else:
         with st.spinner("Analisando..."):
-
-            # resposta ideal da IA
+            # Resposta profissional da IA
             ai_answer = refine_text(st.session_state.challenge, "profissional")
 
             st.subheader("📊 Comparação")
-
             col1, col2 = st.columns(2)
 
             with col1:
@@ -112,7 +109,7 @@ if st.button("Validar resposta", use_container_width=True):
                 st.markdown("**Versão sugerida pela IA:**")
                 st.write(ai_answer)
 
-            # feedback simples
+            # Lógica de feedback (Mantido original)
             user_len = len(user_answer.split())
             ai_len = len(ai_answer.split())
 
@@ -124,10 +121,7 @@ if st.button("Validar resposta", use_container_width=True):
             else:
                 st.info("Tente enriquecer mais sua construção.")
 
-# -------------------------
 # 🔄 Novo desafio
-# -------------------------
-
 if st.button("🔄 Novo desafio"):
     import random
     st.session_state.challenge = random.choice(challenges)
