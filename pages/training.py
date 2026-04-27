@@ -7,71 +7,41 @@ from firebase_admin import credentials, firestore
 from services.refinement import refine_text
 from components.sidebar import render_sidebar
 
-# ---------------------------------------------------------
-# 1. CONFIGURAÇÃO (Primeiro comando Streamlit)
-# ---------------------------------------------------------
-st.set_page_config(page_title="Training - PhraseUp", layout="centered")
+# 1. CONFIGURAÇÃO DA PÁGINA (OBRIGATÓRIO SER O PRIMEIRO ST)
+st.set_page_config(
+    page_title="Cognivus LexOS - Inteligência Cognitiva",
+    page_icon="🧠",
+    layout="wide", # Wide é melhor para ver gráficos e radares
+    initial_sidebar_state="expanded"
+)
 
-# ---------------------------------------------------------
-# 2. INICIALIZAÇÃO SEGURA DO FIREBASE (VIA SECRETS)
-# ---------------------------------------------------------
-def iniciar_firebase():
-    if not firebase_admin._apps:
-        try:
-            if "firebase" not in st.secrets:
-                st.error("Configuração 'firebase' não encontrada nos Secrets.")
-                st.stop()
-                
-            fb_dict = dict(st.secrets["firebase"])
-            
-            # Limpeza da chave PEM para evitar erros de Padding
-            if "private_key" in fb_dict:
-                fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n").strip()
-                
-            cred = credentials.Certificate(fb_dict)
-            firebase_admin.initialize_app(cred)
-        except Exception as e:
-            st.error(f"Erro ao conectar ao Firebase: {e}")
-            st.stop()
-    
-    return firestore.client()
-
-# Inicializa o banco de dados
-db = iniciar_firebase()
-
-# ---------------------------------------------------------
-# 3. TRAVA DE SEGURANÇA COGNIVUS (TOKEN + SESSION STATE)
-# ---------------------------------------------------------
+# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA
 def validar_acesso():
-    # 1. Verifica se já está validado na sessão atual (permite troca de abas)
-    if "autenticado" in st.session_state and st.session_state["autenticado"]:
-        return st.session_state.get("user_id")
-
-    # 2. Se não, verifica parâmetros na URL (vinda do Portal)
     params = st.query_params
     token = params.get("token")
     timestamp = params.get("t")
+    agora_ms = int(time.time() * 1000)
+    
+    # Aumentei para 20s porque apps com muitas bibliotecas (pandas, plotly, wordcloud) 
+    # demoram um pouco mais para carregar no servidor.
+    validade_ms = 20000 
     
     if token and timestamp:
         try:
-            agora_ms = int(time.time() * 1000)
             tempo_decorrido = agora_ms - int(timestamp)
-            
-            # Margem de 30 segundos para o primeiro carregamento
-            if tempo_decorrido < 30000 and len(token) >= 10:
-                st.session_state["autenticado"] = True
-                st.session_state["user_id"] = token
-                return token
-        except:
-            pass
+            if tempo_decorrido > validade_ms or len(token) < 10:
+                st.error("🚫 Link de acesso expirado ou inválido.")
+                st.info("Por favor, acesse o sistema através do Portal Cognivus.")
+                st.stop()
+        except ValueError:
+            st.error("🚫 Parâmetros de segurança corrompidos.")
+            st.stop()
+    else:
+        st.warning("⚠️ Acesso restrito. Por favor, faça login no Portal oficial.")
+        st.stop()
 
-    # 3. Bloqueio caso falhe URL e Sessão
-    st.error("🚫 Acesso restrito ou link expirado.")
-    st.info("Por favor, acesse através do Portal Cognivus.")
-    st.stop()
-
-# Executa a validação
-user_id = validar_acesso()
+# 3. EXECUÇÃO DA VALIDAÇÃO
+validar_acesso()
 
 # ---------------------------------------------------------
 # 4. RENDERIZAÇÃO E LÓGICA DO APP
