@@ -1,26 +1,36 @@
 import streamlit as st
-from utils.db import get_history
+import time
+import firebase_admin
+from firebase_admin import credentials, firestore
 import pandas as pd
 import altair as alt
 from datetime import datetime
+
+# Seus módulos locais
+from utils.db import get_history
 from components.sidebar import render_sidebar
-# ---------------------------------------------------------
-# 2. INICIALIZAÇÃO SEGURA DO FIREBASE (VIA SECRETS)
+
 # ---------------------------------------------------------
 # 1. CONFIGURAÇÃO (Deve ser a primeira linha)
+# ---------------------------------------------------------
 st.set_page_config(page_title="Chat - PhraseUp", layout="centered")
 
+# ---------------------------------------------------------
 # 2. INICIALIZAÇÃO SEGURA DO FIREBASE
+# ---------------------------------------------------------
 def iniciar_firebase():
-    # Se o app já estiver inicializado, apenas retorna o cliente
     if not firebase_admin._apps:
         try:
-            # Puxa do st.secrets e garante que é um dicionário limpo
+            # Verifica se a chave existe no st.secrets
+            if "firebase" not in st.secrets:
+                st.error("Chave 'firebase' não encontrada no Secrets do Streamlit.")
+                st.stop()
+
             fb_dict = dict(st.secrets["firebase"])
             
-            # Limpeza crucial da chave privada
+            # Limpeza crucial da chave privada para evitar erro de Padding/PEM
             if "private_key" in fb_dict:
-                fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n")
+                fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n").strip()
             
             cred = credentials.Certificate(fb_dict)
             firebase_admin.initialize_app(cred)
@@ -30,38 +40,48 @@ def iniciar_firebase():
     
     return firestore.client()
 
-# Inicializa o banco
+# Inicializa o banco de dados
 db = iniciar_firebase()
 
-# 3. TRAVA DE SEGURANÇA (Usando Session State para não dar erro ao trocar de aba)
+# ---------------------------------------------------------
+# 3. TRAVA DE SEGURANÇA (Token + Session State)
+# ---------------------------------------------------------
 def validar_acesso():
-    # Se já validou no app.py, libera direto
+    # 1. Verifica se já está autenticado na sessão (navegação entre abas)
     if "autenticado" in st.session_state and st.session_state["autenticado"]:
         return st.session_state.get("user_id")
 
-    # Se não, tenta validar pela URL
+    # 2. Se não, tenta validar pelos parâmetros da URL (vinda do Portal)
     params = st.query_params
     token = params.get("token")
     t = params.get("t")
     
     if token and t:
         try:
-            agora = int(time.time() * 1000)
-            if (agora - int(t)) < 30000: # 30 segundos
+            agora_ms = int(time.time() * 1000)
+            # Validade de 30 segundos para o link
+            if (agora_ms - int(t)) < 30000:
                 st.session_state["autenticado"] = True
                 st.session_state["user_id"] = token
                 return token
         except:
             pass
 
-    # Se falhar em tudo
+    # 3. Se falhar na URL e na Sessão, bloqueia o acesso
     st.error("🚫 Acesso negado. Use o Portal Cognivus.")
+    st.info("Este módulo é exclusivo para usuários autenticados.")
     st.stop()
 
+# Executa a validação
 user_id = validar_acesso()
 
-# 4. RESTANTE DO SEU CÓDIGO...
+# ---------------------------------------------------------
+# 4. RENDERIZAÇÃO E LÓGICA DO APP
+# ---------------------------------------------------------
 st.title("💬 Chat PhraseUp")
+render_sidebar()
+
+# Seu código continua aqui utilizando 'db' e 'user_id'...
 
 # Exemplo de uso do DB e do User_ID:
 # user_data = db.collection("usuarios").document(user_id).get()
