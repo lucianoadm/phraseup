@@ -4,62 +4,41 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 # Seus outros imports permanecem iguais...
 
-# 1. CONFIGURAÇÃO DA PÁGINA
+# 1. CONFIGURAÇÃO DA PÁGINA (OBRIGATÓRIO SER O PRIMEIRO ST)
 st.set_page_config(
-    page_title="PhraseUp",
-    page_icon="✍️",
-    layout="centered",
+    page_title="Cognivus LexOS - Inteligência Cognitiva",
+    page_icon="🧠",
+    layout="wide", # Wide é melhor para ver gráficos e radares
     initial_sidebar_state="expanded"
 )
 
-# 2. INICIALIZAÇÃO SEGURA DO FIREBASE
-def iniciar_firebase():
-    if not firebase_admin._apps:
-        fb_dict = dict(st.secrets["firebase"])
-        if "private_key" in fb_dict:
-            fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n").strip()
-        cred = credentials.Certificate(fb_dict)
-        firebase_admin.initialize_app(cred)
-    return firestore.client()
-
-db = iniciar_firebase()
-
-# 3. TRAVA DE SEGURANÇA (COM MEMÓRIA DE SESSÃO)
+# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA
 def validar_acesso():
-    # AQUI ESTÁ A CORREÇÃO: Se já validamos antes, apenas libera o acesso
-    if "autenticado" in st.session_state and st.session_state["autenticado"]:
-        return st.session_state["user_id"]
-
     params = st.query_params
     token = params.get("token")
     timestamp = params.get("t")
     agora_ms = int(time.time() * 1000)
     
-    # Aumentei para 10 minutos (600000ms) para evitar erros de lentidão no primeiro acesso
-    validade_ms = 600000 
+    # Aumentei para 20s porque apps com muitas bibliotecas (pandas, plotly, wordcloud) 
+    # demoram um pouco mais para carregar no servidor.
+    validade_ms = 20000 
     
     if token and timestamp:
         try:
-            # abs() corrige problemas caso os relógios dos servidores estejam levemente dessincronizados
-            tempo_decorrido = abs(agora_ms - int(timestamp))
-            
-            if tempo_decorrido <= validade_ms and len(token) >= 10:
-                # SALVA NA SESSÃO: Isso permite que o usuário mude de página sem ser expulso
-                st.session_state["autenticado"] = True
-                st.session_state["user_id"] = token
-                return token
-            else:
-                st.error(f"🚫 Link expirado. Atraso de {tempo_decorrido // 1000}s.")
+            tempo_decorrido = agora_ms - int(timestamp)
+            if tempo_decorrido > validade_ms or len(token) < 10:
+                st.error("🚫 Link de acesso expirado ou inválido.")
+                st.info("Por favor, acesse o sistema através do Portal Cognivus.")
                 st.stop()
-        except:
-            st.error("🚫 Erro nos parâmetros de segurança.")
+        except ValueError:
+            st.error("🚫 Parâmetros de segurança corrompidos.")
             st.stop()
     else:
-        st.warning("⚠️ Acesso restrito. Por favor, use o Portal oficial.")
+        st.warning("⚠️ Acesso restrito. Por favor, faça login no Portal oficial.")
         st.stop()
 
-# Executa a trava
-user_id = validar_acesso()
+# 3. EXECUÇÃO DA VALIDAÇÃO
+validar_acesso()
 
 # 4. RENDERIZAÇÃO
 st.title("Cognivus LexOS")
