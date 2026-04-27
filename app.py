@@ -1,27 +1,10 @@
 import streamlit as st
+import time
 from core.config import validate_keys
 from services.refinement import refine_text
 from components.sidebar import render_sidebar
 
-import streamlit as st
-
-def verificar_acesso_portal():
-    # Tenta obter o token e o timestamp da URL
-    query_params = st.query_params
-    token = query_params.get("token")
-    
-    if not token:
-        # Se não houver token, bloqueia tudo e para o script
-        st.error("🚫 Acesso Negado: Este módulo deve ser acedido através do Portal Cognivus.")
-        st.info("Por favor, faça login em: https://cognivus.com.br")
-        st.stop() # Interrompe a execução do app aqui
-
-# Chamar a verificação antes de qualquer outra coisa
-verificar_acesso_portal()
-
-# ... restante do seu código (layout, lógica, etc.)
-
-# Configuração da página (sempre antes de qualquer renderização)
+# 1. CONFIGURAÇÃO DA PÁGINA (Sempre o primeiro comando st)
 st.set_page_config(
     page_title="PhraseUp",
     page_icon="✍️",
@@ -29,19 +12,36 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# 2. TRAVA DE SEGURANÇA COGNIVUS
+def validar_acesso():
+    params = st.query_params
+    token = params.get("token")
+    timestamp = params.get("t")
+    agora_ms = int(time.time() * 1000)
+    validade_ms = 15000 
+    
+    if token and timestamp:
+        try:
+            tempo_decorrido = agora_ms - int(timestamp)
+            if tempo_decorrido > validade_ms or len(token) < 10:
+                st.error("🚫 Link de acesso expirado ou inválido.")
+                st.info("Por favor, acesse o sistema através do Portal Cognivus.")
+                st.stop()
+        except ValueError:
+            st.error("🚫 Parâmetros de segurança corrompidos.")
+            st.stop()
+    else:
+        st.warning("⚠️ Acesso restrito. Use o Portal oficial.")
+        st.stop()
+
+# Executa a trava logo após a config inicial
+validar_acesso()
+
+# 3. RENDERIZAÇÃO E LÓGICA DO APP
+st.title("Cognivus LexOS")
+
 # Renderiza a sidebar global
 render_sidebar()
-
-# -------------------------------------------------
-# CONFIGURAÇÃO BÁSICA
-# -------------------------------------------------
-
-st.set_page_config(
-    page_title="PhraseUp",
-    page_icon="✍️",
-    layout="centered",
-    initial_sidebar_state="expanded",
-)
 
 # -------------------------------------------------
 # TEMA VISUAL + MODO ESCURO
