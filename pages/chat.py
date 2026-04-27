@@ -1,64 +1,63 @@
 import streamlit as st
-import time                    # <--- ESSENCIAL para validar o tempo
-import firebase_admin          # <--- ESSENCIAL para o banco
+import time
+import firebase_admin
 from firebase_admin import credentials, firestore
 
-# Seus serviços e componentes
-from services.refinement import refine_text
-# Certifique-se que init_db não conflite com a inicialização manual abaixo
-from utils.db import save_history 
-from components.sidebar import render_sidebar
-
-# 1. CONFIGURAÇÃO DA PÁGINA (Deve ser o primeiro comando Streamlit)
-st.set_page_config(page_title="PhraseUp - Chat", page_icon="💬")
+# 1. CONFIGURAÇÃO (Deve ser a primeira linha)
+st.set_page_config(page_title="Chat - PhraseUp", layout="centered")
 
 # 2. INICIALIZAÇÃO SEGURA DO FIREBASE
 def iniciar_firebase():
+    # Se o app já estiver inicializado, apenas retorna o cliente
     if not firebase_admin._apps:
-        fb_dict = dict(st.secrets["firebase"])
-        if "private_key" in fb_dict:
-            fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n")
-        cred = credentials.Certificate(fb_dict)
-        firebase_admin.initialize_app(cred)
+        try:
+            # Puxa do st.secrets e garante que é um dicionário limpo
+            fb_dict = dict(st.secrets["firebase"])
+            
+            # Limpeza crucial da chave privada
+            if "private_key" in fb_dict:
+                fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n")
+            
+            cred = credentials.Certificate(fb_dict)
+            firebase_admin.initialize_app(cred)
+        except Exception as e:
+            st.error(f"Erro ao conectar ao Firebase: {e}")
+            st.stop()
+    
     return firestore.client()
 
+# Inicializa o banco
 db = iniciar_firebase()
 
-# 3. TRAVA DE SEGURANÇA COGNIVUS
+# 3. TRAVA DE SEGURANÇA (Usando Session State para não dar erro ao trocar de aba)
 def validar_acesso():
-    # Tenta validar pela URL (entrada vinda do portal)
+    # Se já validou no app.py, libera direto
+    if "autenticado" in st.session_state and st.session_state["autenticado"]:
+        return st.session_state.get("user_id")
+
+    # Se não, tenta validar pela URL
     params = st.query_params
     token = params.get("token")
-    timestamp = params.get("t")
-    agora_ms = int(time.time() * 1000)
-    validade_ms = 20000 
+    t = params.get("t")
     
-    if token and timestamp:
+    if token and t:
         try:
-            tempo_decorrido = agora_ms - int(timestamp)
-            if tempo_decorrido < validade_ms and len(token) >= 10:
-                # Opcional: guardar na session_state para não pedir token ao trocar de aba
+            agora = int(time.time() * 1000)
+            if (agora - int(t)) < 30000: # 30 segundos
+                st.session_state["autenticado"] = True
                 st.session_state["user_id"] = token
                 return token
         except:
             pass
 
-    # Se falhar na URL, verifica se já validou no app.py (Session State)
-    if "user_id" in st.session_state:
-        return st.session_state["user_id"]
-
-    # Se não houver nenhum dos dois, bloqueia
-    st.error("🚫 Acesso restrito ou sessão expirada.")
-    st.info("Por favor, acesse através do Portal Cognivus.")
+    # Se falhar em tudo
+    st.error("🚫 Acesso negado. Use o Portal Cognivus.")
     st.stop()
 
-# Executa a trava
 user_id = validar_acesso()
 
-# 4. RENDERIZAÇÃO E LÓGICA DO CHAT
-st.title("💬 Chat Inteligente")
-render_sidebar()
-# ... resto do seu código
+# 4. RESTANTE DO SEU CÓDIGO...
+st.title("💬 Chat PhraseUp")
 
 # ---------------------------------------------------------
 # 4. RENDERIZAÇÃO E LÓGICA DO APP
