@@ -2,13 +2,9 @@ import streamlit as st
 import time
 import firebase_admin
 from firebase_admin import credentials, firestore
-from core.config import validate_keys
-from services.refinement import refine_text
-from components.sidebar import render_sidebar
+# Seus outros imports permanecem iguais...
 
-# ---------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA (OBRIGATÓRIO: PRIMEIRO COMANDO)
-# ---------------------------------------------------------
+# 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(
     page_title="PhraseUp",
     page_icon="✍️",
@@ -16,48 +12,47 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------------------------------------------------------
-# 2. INICIALIZAÇÃO SEGURA DO FIREBASE (VIA SECRETS)
-# ---------------------------------------------------------
+# 2. INICIALIZAÇÃO SEGURA DO FIREBASE
 def iniciar_firebase():
     if not firebase_admin._apps:
-        # Puxa os dados do Secrets
         fb_dict = dict(st.secrets["firebase"])
-        
-        # LIMPEZA CRUCIAL: Remove escapes extras e garante que a chave 
-        # seja lida corretamente pelo motor do Firebase
         if "private_key" in fb_dict:
-            fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n")
-            
+            fb_dict["private_key"] = fb_dict["private_key"].replace("\\n", "\n").strip()
         cred = credentials.Certificate(fb_dict)
         firebase_admin.initialize_app(cred)
-    
     return firestore.client()
 
-# ---------------------------------------------------------
-# 3. TRAVA DE SEGURANÇA COGNIVUS (TOKEN + TIMESTAMP)
-# ---------------------------------------------------------
+db = iniciar_firebase()
+
+# 3. TRAVA DE SEGURANÇA (COM MEMÓRIA DE SESSÃO)
 def validar_acesso():
+    # AQUI ESTÁ A CORREÇÃO: Se já validamos antes, apenas libera o acesso
+    if "autenticado" in st.session_state and st.session_state["autenticado"]:
+        return st.session_state["user_id"]
+
     params = st.query_params
     token = params.get("token")
     timestamp = params.get("t")
     agora_ms = int(time.time() * 1000)
     
-    # Validade de 20 segundos (margem para carregamento do server)
-    validade_ms = 60000 
+    # Aumentei para 10 minutos (600000ms) para evitar erros de lentidão no primeiro acesso
+    validade_ms = 600000 
     
     if token and timestamp:
         try:
-            tempo_decorrido = agora_ms - int(timestamp)
+            # abs() corrige problemas caso os relógios dos servidores estejam levemente dessincronizados
+            tempo_decorrido = abs(agora_ms - int(timestamp))
             
-            # Se o link for velho ou o token for inválido
-            if tempo_decorrido > validade_ms or len(token) < 10:
-                st.error("🚫 Link de acesso expirado ou inválido.")
-                st.info("Por favor, acesse o sistema através do Portal Cognivus.")
+            if tempo_decorrido <= validade_ms and len(token) >= 10:
+                # SALVA NA SESSÃO: Isso permite que o usuário mude de página sem ser expulso
+                st.session_state["autenticado"] = True
+                st.session_state["user_id"] = token
+                return token
+            else:
+                st.error(f"🚫 Link expirado. Atraso de {tempo_decorrido // 1000}s.")
                 st.stop()
-            return token # Retorna o UID do usuário para uso posterior
-        except (ValueError, TypeError):
-            st.error("🚫 Parâmetros de segurança corrompidos.")
+        except:
+            st.error("🚫 Erro nos parâmetros de segurança.")
             st.stop()
     else:
         st.warning("⚠️ Acesso restrito. Por favor, use o Portal oficial.")
@@ -66,9 +61,7 @@ def validar_acesso():
 # Executa a trava
 user_id = validar_acesso()
 
-# ---------------------------------------------------------
-# 4. RENDERIZAÇÃO E LÓGICA DO APP
-# ---------------------------------------------------------
+# 4. RENDERIZAÇÃO
 st.title("Cognivus LexOS")
 render_sidebar()
 
