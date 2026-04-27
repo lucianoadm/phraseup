@@ -18,26 +18,42 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA
+# 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA (PADRÃO MASTER AJUSTADO)
 def validar_acesso():
+    # Verifica se já houve validação nesta sessão ativa do navegador
+    if "autenticado" in st.session_state and st.session_state["autenticado"]:
+        return st.session_state.get("user_id")
+
     params = st.query_params
     token = params.get("token")
-    timestamp = params.get("t")
+    timestamp_str = params.get("t")
     agora_ms = int(time.time() * 1000)
     
-    # Aumentei para 20s porque apps com muitas bibliotecas (pandas, plotly, wordcloud) 
-    # demoram um pouco mais para carregar no servidor.
-    validade_ms = 20000 
+    # Janela de 20 minutos (1.200.000 ms) para evitar erros no Streamlit Cloud
+    validade_ms = 1200000 
     
-    if token and timestamp:
+    if token and timestamp_str:
         try:
-            tempo_decorrido = agora_ms - int(timestamp)
-            if tempo_decorrido > validade_ms or len(token) < 10:
+            timestamp = int(timestamp_str)
+            
+            # Normalização para milissegundos se vier em segundos
+            if timestamp < 10000000000:
+                timestamp *= 1000
+                
+            tempo_decorrido = abs(agora_ms - timestamp)
+            
+            if tempo_decorrido <= validade_ms and len(token) >= 10:
+                # Salva o estado para navegação fluida entre abas
+                st.session_state["autenticado"] = True
+                st.session_state["user_id"] = token
+                st.query_params.clear() 
+                return token
+            else:
                 st.error("🚫 Link de acesso expirado ou inválido.")
                 st.info("Por favor, acesse o sistema através do Portal Cognivus.")
                 st.stop()
-        except ValueError:
-            st.error("🚫 Parâmetros de segurança corrompidos.")
+        except Exception as e:
+            st.error(f"🚫 Falha na validação: {e}")
             st.stop()
     else:
         st.warning("⚠️ Acesso restrito. Por favor, faça login no Portal oficial.")
@@ -45,19 +61,14 @@ def validar_acesso():
 
 # 3. EXECUÇÃO DA VALIDAÇÃO
 validar_acesso()
+
 # ---------------------------------------------------------
-# 4. RENDERIZAÇÃO E LÓGICA DO APP
+# 4. RENDERIZAÇÃO E LÓGICA DO APP (PRESERVAÇÃO TOTAL)
 # ---------------------------------------------------------
-st.title("💬 Chat PhraseUp")
 render_sidebar()
 
-# Seu código continua aqui utilizando 'db' e 'user_id'...
-
-# Exemplo de uso do DB e do User_ID:
-# user_data = db.collection("usuarios").document(user_id).get()
-
 # -------------------------
-# 🎨 Estilo avançado
+# 🎨 Estilo avançado (Mantido original)
 # -------------------------
 st.markdown("""
 <style>
@@ -115,31 +126,22 @@ if not history:
 # 📊 Processamento dos dados
 # -------------------------
 total_texts = len(history)
-
 total_words_input = 0
 total_words_output = 0
 
-levels_count = {
-    "basico": 0,
-    "profissional": 0,
-    "persuasivo": 0
-}
-
+levels_count = {"basico": 0, "profissional": 0, "persuasivo": 0}
 dates = []
 
 for input_text, output_text, level, created_at in history:
     total_words_input += len(input_text.split())
     total_words_output += len(output_text.split())
-
     if level in levels_count:
         levels_count[level] += 1
-
     dates.append(datetime.strptime(created_at[:10], "%Y-%m-%d"))
 
 avg_input = total_words_input / total_texts
 avg_output = total_words_output / total_texts
 gain = avg_output - avg_input
-
 score = min(100, int((gain * 5) + total_texts))
 
 # -------------------------
@@ -153,68 +155,31 @@ avg_texts_per_day = total_texts / days_using
 # 📌 Visão Geral — Cards Premium
 # -------------------------
 st.subheader("📌 Visão Geral")
-
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown(f"""
-    <div class="metric-card">
-        <h3 style="margin:0; font-size:22px;">{total_texts}</h3>
-        <p style="opacity:0.7; margin:0;">Textos analisados</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown(f'<div class="metric-card"><h3 style="margin:0; font-size:22px;">{total_texts}</h3><p style="opacity:0.7; margin:0;">Textos analisados</p></div>', unsafe_allow_html=True)
 with col2:
-    st.markdown(f"""
-    <div class="metric-card">
-        <h3 style="margin:0; font-size:22px;">{avg_input:.1f}</h3>
-        <p style="opacity:0.7; margin:0;">Média palavras (antes)</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown(f'<div class="metric-card"><h3 style="margin:0; font-size:22px;">{avg_input:.1f}</h3><p style="opacity:0.7; margin:0;">Média palavras (antes)</p></div>', unsafe_allow_html=True)
 with col3:
-    st.markdown(f"""
-    <div class="metric-card">
-        <h3 style="margin:0; font-size:22px;">{avg_output:.1f}</h3>
-        <p style="opacity:0.7; margin:0;">Média palavras (depois)</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f'<div class="metric-card"><h3 style="margin:0; font-size:22px;">{avg_output:.1f}</h3><p style="opacity:0.7; margin:0;">Média palavras (depois)</p></div>', unsafe_allow_html=True)
 
-st.markdown(f"""
-<div class="metric-card">
-    <h3 style="margin:0; font-size:22px;">{gain:.1f}</h3>
-    <p style="opacity:0.7; margin:0;">📈 Ganho médio de vocabulário</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(f'<div class="metric-card"><h3 style="margin:0; font-size:22px;">{gain:.1f}</h3><p style="opacity:0.7; margin:0;">📈 Ganho médio de vocabulário</p></div>', unsafe_allow_html=True)
 
 # -------------------------
 # ⏳ Cartões de tempo de uso
 # -------------------------
 st.subheader("⏳ Tempo de Uso do App")
-
 colA, colB = st.columns(2)
-
 with colA:
-    st.markdown(f"""
-    <div class="time-card">
-        <h3 style="margin:0; font-size:22px;">{days_using} dias</h3>
-        <p style="opacity:0.7; margin:0;">Desde o primeiro uso</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown(f'<div class="time-card"><h3 style="margin:0; font-size:22px;">{days_using} dias</h3><p style="opacity:0.7; margin:0;">Desde o primeiro uso</p></div>', unsafe_allow_html=True)
 with colB:
-    st.markdown(f"""
-    <div class="time-card">
-        <h3 style="margin:0; font-size:22px;">{avg_texts_per_day:.1f}/dia</h3>
-        <p style="opacity:0.7; margin:0;">Média de textos por dia</p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f'<div class="time-card"><h3 style="margin:0; font-size:22px;">{avg_texts_per_day:.1f}/dia</h3><p style="opacity:0.7; margin:0;">Média de textos por dia</p></div>', unsafe_allow_html=True)
 
 # -------------------------
-# 📊 Uso por nível — Badges com contraste corrigido
+# 📊 Uso por nível
 # -------------------------
 st.subheader("🎯 Uso por nível de refinamento")
-
 st.markdown(f"""
 <span class="level-badge level-basico">Básico: {levels_count['basico']}</span>
 <span class="level-badge level-profissional">Profissional: {levels_count['profissional']}</span>
@@ -222,75 +187,27 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # -------------------------
-# 📈 Gráfico de evolução
+# Gráfico de evolução
 # -------------------------
 st.subheader("📊 Evolução ao longo do tempo")
-
-df = pd.DataFrame({
-    "Data": dates,
-    "Textos": list(range(1, len(dates) + 1))
-})
-
-chart = (
-    alt.Chart(df)
-    .mark_line(point=True)
-    .encode(
-        x="Data:T",
-        y="Textos:Q",
-        tooltip=["Data", "Textos"]
-    )
-    .properties(height=300)
-)
-
+df = pd.DataFrame({"Data": dates, "Textos": list(range(1, len(dates) + 1))})
+chart = (alt.Chart(df).mark_line(point=True).encode(x="Data:T", y="Textos:Q", tooltip=["Data", "Textos"]).properties(height=300))
 st.altair_chart(chart, use_container_width=True)
 
 # -------------------------
-# 🏆 Score de Evolução — Card + Barra
+# Score e Insights
 # -------------------------
 st.subheader("🏆 Score de Evolução")
-
-st.markdown(f"""
-<div class="metric-card">
-    <h3 style="margin:0; font-size:26px;">{score}/100</h3>
-    <p style="opacity:0.7; margin:0;">Seu score atual</p>
-</div>
-""", unsafe_allow_html=True)
-
+st.markdown(f'<div class="metric-card"><h3 style="margin:0; font-size:26px;">{score}/100</h3><p style="opacity:0.7; margin:0;">Seu score atual</p></div>', unsafe_allow_html=True)
 st.progress(score / 100)
 
-# -------------------------
-# 💡 Insights — Fundo corrigido
-# -------------------------
 st.subheader("💡 Insights")
-
 if gain > 5:
-    st.markdown("""
-    <div class="insight-card">
-        🚀 <strong>Vocabulário em expansão!</strong><br>
-        Seu ganho médio de palavras está excelente.
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown('<div class="insight-card">🚀 <strong>Vocabulário em expansão!</strong><br>Seu ganho médio de palavras está excelente.</div>', unsafe_allow_html=True)
 elif gain > 2:
-    st.markdown("""
-    <div class="insight-card">
-        👍 <strong>Boa evolução!</strong><br>
-        Continue praticando para melhorar ainda mais.
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.markdown('<div class="insight-card">👍 <strong>Boa evolução!</strong><br>Continue praticando para melhorar ainda mais.</div>', unsafe_allow_html=True)
 else:
-    st.markdown("""
-    <div class="insight-card">
-        📘 <strong>Você pode evoluir mais!</strong><br>
-        Experimente níveis mais avançados para enriquecer seu vocabulário.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="insight-card">📘 <strong>Você pode evoluir mais!</strong><br>Experimente níveis mais avançados para enriquecer seu vocabulário.</div>', unsafe_allow_html=True)
 
 if levels_count["persuasivo"] > levels_count["basico"]:
-    st.markdown("""
-    <div class="insight-card">
-        🎯 <strong>Foco em impacto!</strong><br>
-        Você está usando mais o nível persuasivo — ótimo para comunicação estratégica.
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown('<div class="insight-card">🎯 <strong>Foco em impacto!</strong><br>Você está usando mais o nível persuasivo — ótimo para comunicação estratégica.</div>', unsafe_allow_html=True)
