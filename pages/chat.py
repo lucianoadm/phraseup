@@ -1,15 +1,25 @@
 import streamlit as st
 import time
+import sys
+import os
+
+# Adiciona a raiz do projeto ao path para localizar os módulos locais
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import firebase_admin
 from firebase_admin import credentials, firestore
+
+# IMPORTAÇÃO DAS SUAS FUNÇÕES LOCAIS (O que estava faltando)
+from components.sidebar import render_sidebar
+from utils.db import init_db, save_history, get_history
+from services.refinement import refine_text
 
 # 1. CONFIGURAÇÃO DA PÁGINA (OBRIGATÓRIO SER O PRIMEIRO ST)
 st.set_page_config(
     page_title="Cognivus LexOS - Inteligência Cognitiva",
     page_icon="🧠",
-    layout="wide", # Wide é melhor para ver gráficos e radares
+    layout="wide",
     initial_sidebar_state="expanded"
-)
 
 # 2. DEFINIÇÃO DA TRAVA DE SEGURANÇA (PADRÃO MASTER AJUSTADO)
 def validar_acesso():
