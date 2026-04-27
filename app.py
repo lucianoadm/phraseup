@@ -3,6 +3,23 @@ import time
 from core.config import validate_keys
 from services.refinement import refine_text
 from components.sidebar import render_sidebar
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Inicializa o Firebase usando os Secrets do Streamlit
+def iniciar_firebase():
+    if not firebase_admin._apps:
+        # Puxa o dicionário completo que você colou no Secrets
+        firebase_info = st.secrets["firebase"]
+        
+        # Cria a credencial a partir do dicionário
+        cred = credentials.Certificate(dict(firebase_info))
+        firebase_admin.initialize_app(cred)
+    
+    return firestore.client()
+
+# Chama a função
+db = iniciar_firebase()
 
 # 1. CONFIGURAÇÃO DA PÁGINA (Sempre o primeiro comando st)
 st.set_page_config(
