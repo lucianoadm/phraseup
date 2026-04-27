@@ -3,3 +3,9 @@ python-dotenv
 openai
 anthropic
 google-generativeai
+firebase-admin
+pandas
+plotly
+# Adicione as outras que você já usa, como:
+fpdf
+wordcloud
